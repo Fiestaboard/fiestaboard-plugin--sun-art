@@ -39,52 +39,27 @@
         "minimum": 60
       }
     },
-    "required": [
-      "latitude",
-      "longitude"
-    ]
+    "required": ["latitude", "longitude"]
   },
   "env_vars": [
-    {
-      "name": "SUN_ART_ENABLED",
-      "required": false,
-      "description": "Enable sun art feature",
-      "default": "false"
-    },
-    {
-      "name": "SUN_ART_LATITUDE",
-      "required": false,
-      "description": "Location latitude (-90 to 90)"
-    },
-    {
-      "name": "SUN_ART_LONGITUDE",
-      "required": false,
-      "description": "Location longitude (-180 to 180)"
-    },
-    {
-      "name": "SUN_ART_REFRESH_SECONDS",
-      "required": false,
-      "description": "Refresh interval in seconds (default: 300)",
-      "default": "300"
-    }
+    {"name": "SUN_ART_ENABLED", "required": false, "description": "Enable sun art feature", "default": "false"},
+    {"name": "SUN_ART_LATITUDE", "required": false, "description": "Location latitude (-90 to 90)"},
+    {"name": "SUN_ART_LONGITUDE", "required": false, "description": "Location longitude (-180 to 180)"},
+    {"name": "SUN_ART_REFRESH_SECONDS", "required": false, "description": "Refresh interval in seconds (default: 300)", "default": "300"}
   ],
   "variables": {
-    "simple": [
-      "sun_art",
-      "sun_stage",
-      "sun_position",
-      "is_daytime",
-      "time_to_sunrise",
-      "time_to_sunset"
-    ]
-  },
-  "max_lengths": {
-    "sun_art": 200,
-    "sun_stage": 15,
-    "sun_position": 6,
-    "is_daytime": 1,
-    "time_to_sunrise": 8,
-    "time_to_sunset": 8
+    "groups": {
+      "display": {"label": "Display"},
+      "sun": {"label": "Sun Position"}
+    },
+    "simple": {
+      "sun_art": {"description": "Full sun art pattern for board display", "type": "string", "max_length": 200, "group": "display", "example": "(art pattern)"},
+      "sun_stage": {"description": "Current sun stage name (e.g. sunrise, noon, sunset)", "type": "string", "max_length": 15, "group": "sun", "example": "noon"},
+      "sun_position": {"description": "Sun elevation angle in degrees", "type": "number", "max_length": 6, "group": "sun", "example": "45.2"},
+      "is_daytime": {"description": "Whether it is currently daytime (1 or 0)", "type": "boolean", "max_length": 1, "group": "sun", "example": "1"},
+      "time_to_sunrise": {"description": "Time remaining until next sunrise", "type": "string", "max_length": 8, "group": "sun", "example": "5:23:10"},
+      "time_to_sunset": {"description": "Time remaining until next sunset", "type": "string", "max_length": 8, "group": "sun", "example": "3:45:00"}
+    }
   },
   "fiestaboard_version": ">=2.10.0"
 }
