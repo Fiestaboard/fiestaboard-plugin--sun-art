@@ -2,7 +2,7 @@
 
 Display a full-screen 6x22 bit image pattern that changes based on the sun's position throughout the day. The sun rises line-by-line from the bottom to full at noon, then sets line-by-line back to night.
 
-![Sun Art Display](./docs/sun-art-noon.png)
+![Sun Art Display](./docs/board-display.png)
 
 **→ [Setup Guide](./docs/SETUP.md)** - Location configuration
 
@@ -101,7 +101,7 @@ The pattern changes through 12 distinct stages. Here are visual examples:
 *Sun high (5 rows), blue sky dominant*
 
 ### Noon
-![Noon Stage](./docs/sun-art-noon.png)
+![Noon Stage](./docs/board-display.png)
 *Full sun (6 rows), brightest with white core*
 
 ### Afternoon
