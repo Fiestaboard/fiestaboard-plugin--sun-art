@@ -2,7 +2,7 @@
 
 The Sun Art feature displays a full-screen 6x22 bit image pattern that changes based on the sun's position throughout the day. Watch the pattern evolve from night through dawn, sunrise, morning, noon, afternoon, sunset, and dusk.
 
-![Sun Art Display](./sun-art-display.png)
+![Sun Art Display](./board-display.png)
 
 ## Overview
 
