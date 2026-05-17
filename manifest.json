@@ -1,7 +1,7 @@
 {
   "id": "sun_art",
   "name": "Sun Art",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Display a full-screen sun art pattern that changes based on the sun's position throughout the day",
   "author": "FiestaBoard Team",
   "repository": "https://github.com/Fiestaboard/fiestaboard-plugin--sun-art",
@@ -132,41 +132,64 @@
     }
   ],
   "demo": {
-    "name": "Sun Art Demo",
-    "device_type": "flagship",
-    "template": [
-      "{{sun_art.sun_art}}",
-      "",
-      "",
-      "",
-      "",
-      ""
-    ],
-    "line_metadata": [
-      {
-        "alignment": "left",
-        "wrap": true
-      },
-      {
-        "alignment": "left",
-        "wrap": false
-      },
-      {
-        "alignment": "left",
-        "wrap": false
-      },
-      {
-        "alignment": "left",
-        "wrap": false
-      },
-      {
-        "alignment": "left",
-        "wrap": false
-      },
-      {
-        "alignment": "left",
-        "wrap": false
-      }
-    ]
+    "flagship": {
+      "name": "Sun Art Demo",
+      "template": [
+        "{{sun_art.sun_art}}",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "line_metadata": [
+        {
+          "alignment": "left",
+          "wrap": true
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        }
+      ]
+    },
+    "note": {
+      "name": "Sun Art (Note)",
+      "template": [
+        "{{sun_art.sun_art}}",
+        "",
+        ""
+      ],
+      "line_metadata": [
+        {
+          "alignment": "left",
+          "wrap": true
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        }
+      ]
+    }
   }
 }
