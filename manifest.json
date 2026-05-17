@@ -1,7 +1,7 @@
 {
   "id": "sun_art",
   "name": "Sun Art",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Display a full-screen sun art pattern that changes based on the sun's position throughout the day",
   "author": "FiestaBoard Team",
   "repository": "https://github.com/Fiestaboard/fiestaboard-plugin--sun-art",
