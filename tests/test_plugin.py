@@ -427,6 +427,52 @@ class TestSunArtEdgeCases:
     @patch('plugins.sun_art.elevation')
     @patch('plugins.sun_art.azimuth')
     @patch('plugins.sun_art.sun')
+    def test_fetch_data_config_change_invalidates_cache(
+        self, mock_sun, mock_azimuth, mock_elevation, mock_config, sample_manifest
+    ):
+        """Test a config change drops the cache instead of serving the old location."""
+        mock_config.GENERAL_TIMEZONE = "America/Los_Angeles"
+        
+        tz = pytz.timezone("America/Los_Angeles")
+        now = datetime.now(tz)
+        mock_sun.return_value = {
+            "sunrise": now.replace(hour=6, minute=30),
+            "sunset": now.replace(hour=18, minute=30),
+            "noon": now.replace(hour=12, minute=0)
+        }
+        mock_elevation.return_value = 45.0
+        mock_azimuth.return_value = 180.0
+        
+        plugin = SunArtPlugin(sample_manifest)
+        plugin.config = {
+            "latitude": 37.7749,
+            "longitude": -122.4194,
+            "refresh_seconds": 300
+        }
+        
+        result1 = plugin.fetch_data()
+        assert result1.available is True
+        
+        plugin._cache = result1.data.copy()
+        plugin._cache["calculated_at"] = now
+        plugin._cache_date = now.strftime("%Y-%m-%d")
+        
+        # Same cache window, different location: the cached pattern is now wrong
+        plugin.config = {
+            "latitude": 40.7128,
+            "longitude": -74.0060,
+            "refresh_seconds": 300
+        }
+        assert plugin._cache is None
+        
+        result2 = plugin.fetch_data()
+        assert result2.available is True
+        assert mock_elevation.call_count == 2  # Recalculated for the new location
+    
+    @patch('plugins.sun_art.Config')
+    @patch('plugins.sun_art.elevation')
+    @patch('plugins.sun_art.azimuth')
+    @patch('plugins.sun_art.sun')
     def test_calculate_sun_position_during_day(
         self, mock_sun, mock_azimuth, mock_elevation, mock_config, sample_manifest
     ):
