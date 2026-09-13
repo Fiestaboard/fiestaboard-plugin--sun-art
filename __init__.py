@@ -76,6 +76,17 @@ class SunArtPlugin(PluginBase):
         
         return errors
     
+    def on_config_change(self, old_config: Dict[str, Any], new_config: Dict[str, Any]) -> None:
+        """Drop the cached pattern so a config change takes effect immediately.
+        
+        The cache is keyed only on the date and its age, so without this a
+        change to `latitude`/`longitude` would keep serving the pattern
+        calculated for the old location for up to refresh_seconds.
+        """
+        self._cache = None
+        self._cache_date = None
+        logger.debug("Cleared cached sun art after config change")
+    
     def fetch_data(self) -> PluginResult:
         """Fetch sun art data and generate pattern."""
         lat = self.config.get("latitude")
