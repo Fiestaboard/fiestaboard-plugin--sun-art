@@ -1,6 +1,6 @@
 # Sun Art Setup Guide
 
-The Sun Art feature displays a full-screen 6x22 bit image pattern that changes based on the sun's position throughout the day. Watch the pattern evolve from night through dawn, sunrise, morning, noon, afternoon, sunset, and dusk.
+The Sun Art feature fills the board with a sun scene, rendered at the board's own size, that changes based on the sun's position throughout the day. Watch the pattern evolve from night through dawn, sunrise, morning, noon, afternoon, sunset, and dusk.
 
 ![Sun Art Display](./board-display.png)
 
@@ -141,7 +141,7 @@ Simply use the `sun_art` variable to display the full pattern:
 {{sun_art.sun_art}}
 ```
 
-This will fill the entire 6x22 board with the current sun pattern.
+This will fill the whole board with the current sun scene, whatever its size.
 
 ### With Stage Information
 

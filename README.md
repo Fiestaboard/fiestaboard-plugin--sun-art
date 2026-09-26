@@ -1,6 +1,8 @@
 # Sun Art Plugin
 
-Display a full-screen 6x22 bit image pattern that changes based on the sun's position throughout the day. The sun rises line-by-line from the bottom to full at noon, then sets line-by-line back to night.
+Display a full-board sun scene that changes based on the sun's position throughout the day. The sun rises from the horizon to full at noon, then sets back to a starry night.
+
+The scene is re-rendered procedurally at whatever geometry the board reports — a Note (15x3), a Flagship (22x6) or a note array up to 120x24 (which is what a FiestaPanel is). Nothing is tiled, cropped or letterboxed: the horizon is a fraction of the board's height, the sun disc is centred on its width, and star density scales with its area.
 
 ![Sun Art Display](./docs/board-display.png)
 
@@ -12,7 +14,7 @@ The Sun Art plugin generates visual patterns representing the sun's position usi
 
 ## Features
 
-- **Full-screen patterns**: 6x22 grid of color tiles
+- **Full-board scenes**: colour tiles filling the board, at the board's own size
 - **Real-time sun tracking**: Calculates sun position based on your location
 - **12 distinct stages**: Smooth progression showing sun rising/setting line-by-line
 - **Night sky with stars**: White dots scattered on black background
@@ -40,41 +42,50 @@ The plugin uses 12 stages to show the sun rising line-by-line then setting line-
 | **Night** | < -12° | Black sky with white stars |
 | **Late Night** | -12° to -6° | Stars with faint glow at horizon |
 | **Dawn** | -6° to -1° | Purple sky, orange glow, sun approaching |
-| **Early Sunrise** | -1° to 3° | Sun peeking (1-2 rows visible) |
-| **Sunrise** | 3° to 10° | Sun rising (3 rows), blue sky appearing |
-| **Morning** | 10° to 30° | Sun high (5 rows), mostly blue sky |
-| **Noon** | > 30° | Full sun (6 rows), brightest with white core |
+| **Early Sunrise** | -1° to 3° | Sun peeking above the horizon |
+| **Sunrise** | 3° to 10° | Sun clearing the horizon, blue sky appearing |
+| **Morning** | 10° to 30° | Sun high, mostly blue sky |
+| **Noon** | > 30° | Sun at its highest, brightest with white core |
 
 **Setting (after solar noon):**
 
 | Stage | Elevation | Description |
 |-------|-----------|-------------|
-| **Afternoon** | 10° to 30° | Sun lowering (5 rows), blue sky |
-| **Sunset** | 3° to 10° | Sun setting (3 rows), orange/red sky |
-| **Late Sunset** | -1° to 3° | Sun almost gone (2 rows), red/purple sky |
+| **Afternoon** | 10° to 30° | Sun lowering, blue sky |
+| **Sunset** | 3° to 10° | Sun setting, orange/red sky |
+| **Late Sunset** | -1° to 3° | Sun almost gone, red/purple sky |
 | **Dusk** | -6° to -1° | Sun just set, afterglow fading |
 | **Twilight** | -12° to -6° | Fading to night, stars appearing |
 | **Night** | < -12° | Black sky with white stars |
 
 ### Pattern Generation
 
-Each stage has a hardcoded 6x22 pattern showing the sun progressively rising then setting:
+Each stage is a **style**, not a picture: sky and ground colour bands, a
+horizon position, a disc offset and radius, and a star flag (see
+`STAGE_STYLES` in `__init__.py`). The scene is drawn from those proportions at
+the board's own `rows` x `cols` on every fetch, so the same stage reads
+correctly on a Note and on a 120x24 panel.
 
 - **Night/Twilight**: Black background with scattered white stars
 - **Dawn/Dusk**: Purple/violet sky with orange glow at horizon
 - **Sunrise/Sunset stages**: Yellow sun column grows/shrinks row-by-row
 - **Morning/Afternoon**: Sun fills most of the display, blue sky at top
-- **Noon**: Full 6-row sun with white core (brightest)
+- **Noon**: Full-height sun with white core (brightest)
 
 **Pattern Design Features:**
-- **Vertical sun column** centered at column 11
-- **Stars at night** using white tiles on black background
+- **Sun disc** centred on the board's width, its height a fraction of the
+  board's height and its width following the tile aspect (a split-flap is
+  about twice as tall as it is wide), capped so a squarer board does not let
+  a round disc swallow the whole scene
+- **Stars at night** at a fixed density per tile of sky, placed from a seed
+  derived from the stage and the geometry, so a board's sky is stable between
+  refreshes but is not a crop of another board's
 - **Color tiles only** (codes 63-71) - no character symbols
-- **Smooth progression**: Each stage adds/removes approximately one row of sun
+- **Smooth progression**: each stage moves the disc relative to the horizon
 
 ## Stage Examples
 
-The pattern changes through 12 distinct stages. Here are visual examples:
+The scene changes through 12 distinct stages. The examples below are Flagship (22x6) renders; every stage is re-rendered at the board's own proportions, so the same stage looks like this on any board.
 
 ### Night
 ![Night Stage](./docs/sun-art-night.png)
@@ -90,31 +101,31 @@ The pattern changes through 12 distinct stages. Here are visual examples:
 
 ### Early Sunrise
 ![Early Sunrise Stage](./docs/sun-art-early-sunrise.png)
-*Sun peeking above horizon (1-2 rows visible)*
+*Sun peeking above the horizon*
 
 ### Sunrise
 ![Sunrise Stage](./docs/sun-art-sunrise.png)
-*Sun rising (3 rows visible), blue sky appearing*
+*Sun clearing the horizon, blue sky appearing*
 
 ### Morning
 ![Morning Stage](./docs/sun-art-morning.png)
-*Sun high (5 rows), blue sky dominant*
+*Sun high, blue sky dominant*
 
 ### Noon
 ![Noon Stage](./docs/board-display.png)
-*Full sun (6 rows), brightest with white core*
+*Sun at its highest, brightest with white core*
 
 ### Afternoon
 ![Afternoon Stage](./docs/sun-art-afternoon.png)
-*Sun lowering (5 rows), same as morning*
+*Sun lowering, the mirror of morning*
 
 ### Sunset
 ![Sunset Stage](./docs/sun-art-sunset.png)
-*Sun setting (3 rows), orange/red sky*
+*Sun setting, orange/red sky*
 
 ### Late Sunset
 ![Late Sunset Stage](./docs/sun-art-late-sunset.png)
-*Sun almost gone (2 rows), red/purple sky*
+*Sun almost gone, red/purple sky*
 
 ### Dusk
 ![Dusk Stage](./docs/sun-art-dusk.png)
@@ -139,7 +150,7 @@ The pattern changes through 12 distinct stages. Here are visual examples:
 
 ### Array Format
 
-The `sun_art_array` variable is available as a nested array (6 rows x 22 columns) of character codes (0-71). This is useful for programmatic access or custom rendering.
+The `sun_art_array` variable is available as a nested array (`board.rows` rows x `board.cols` columns) of character codes (0-71). This is useful for programmatic access or custom rendering.
 
 ## Configuration
 
@@ -173,14 +184,14 @@ The plugin uses the `astral` library (v3.2+) which provides:
 ### Pattern Format
 
 **String Format:**
-- Newline-separated lines (6 lines total)
+- Newline-separated lines, one per board row
 - Color markers: `{red}`, `{orange}`, `{yellow}`, `{blue}`, `{black}`, `{white}`
 - Character codes: Regular characters (A-Z, 0-9, punctuation)
 - Example: `"{yellow}{yellow}O{yellow}{yellow}\n{orange}{orange}{orange}..."`
 
 **Array Format:**
 - Nested list: `[[code, code, ...], [code, code, ...], ...]`
-- 6 rows, 22 columns
+- `board.rows` rows, `board.cols` columns
 - Character codes: 0-71 (see `src/board_chars.py`)
 
 ### Caching
@@ -189,6 +200,9 @@ Sun calculations are cached per day to reduce computation:
 - Cache invalidated at midnight (new day)
 - Cache also respects refresh interval (won't recalculate if within refresh window)
 - Cache includes calculated timestamp for age checking
+- The cache holds the sun **position** only, never the rendered scene. Rendering
+  is board-specific, and a cached frame here would short-circuit ahead of
+  `PluginBase`'s geometry-keyed cache and hand one board another's picture.
 
 ### Performance
 
@@ -206,7 +220,7 @@ Use the `sun_art` variable directly in a template:
 {{sun_art.sun_art}}
 ```
 
-This will display the full 6x22 pattern on the board.
+This will fill the board with the current sun scene, at the board's own size.
 
 ### With Stage Information
 
@@ -248,8 +262,12 @@ Main plugin class that extends `PluginBase`.
 - `_determine_sun_stage(elevation, is_rising)`: Classify current sun stage
   - Returns: Stage name string
 
-- `_generate_pattern(stage, elevation)`: Create 6x22 grid pattern
-  - Returns: Nested list of character codes (6x22)
+- `board_size()`: The bound board's `(rows, cols)`, defaulting to a Flagship
+  when no board is bound
+  - Returns: Tuple of (rows, cols)
+
+- `_generate_pattern(stage, rows, cols)`: Render the stage at that geometry
+  - Returns: Nested list of character codes, `rows` x `cols`
 
 - `_pattern_to_string(pattern)`: Convert array to string format
   - Returns: Newline-separated string with color markers
@@ -264,7 +282,7 @@ The plugin includes comprehensive tests with >80% coverage:
 - Configuration validation
 - Sun position calculations
 - Stage determination (all 12 stages)
-- Pattern generation (verify 6x22 dimensions)
+- Pattern generation (every stage fills every board shape exactly)
 - String and array format outputs
 - Error handling
 - Edge cases (polar regions, equator, date boundaries)
@@ -280,4 +298,5 @@ When modifying this plugin:
 - Maintain >80% test coverage
 - Update documentation if adding new stages or variables
 - Test with various locations (equator, poles, different timezones)
-- Verify pattern generation produces valid 6x22 grids
+- Verify pattern generation fills the board exactly at every geometry
+  (`tests/test_board_geometry.py` runs FiestaBoard's shared conformance suite)
