@@ -19,9 +19,10 @@ if 'astral' not in sys.modules or not hasattr(sys.modules['astral'], 'LocationIn
     sys.modules['astral'] = mock_astral_module
     sys.modules['astral.sun'] = mock_astral_module.sun
 
+from src.devices import BoardContext
 from src.plugins.base import PluginResult
 from src.board_chars import BoardChars
-from plugins.sun_art import SunArtPlugin
+from plugins.sun_art import FALLBACK_BOARD, STAGE_STYLES, SunArtPlugin
 
 
 class TestSunArtPlugin:
@@ -289,19 +290,51 @@ class TestSunArtPlugin:
         assert stage == "noon"
     
     def test_generate_pattern_dimensions(self, sample_manifest):
-        """Test that generated patterns are 6x22."""
+        """Every stage fills exactly the geometry it is asked for."""
         plugin = SunArtPlugin(sample_manifest)
-        
-        for stage in ["night", "dawn", "sunrise", "morning", "noon", "afternoon", "sunset", "dusk"]:
-            pattern = plugin._generate_pattern(stage, 0.0)
-            assert len(pattern) == 6, f"Pattern for {stage} should have 6 rows"
-            for row in pattern:
-                assert len(row) == 22, f"Pattern for {stage} should have 22 columns per row"
+
+        shapes = [(6, 22), (3, 15), (12, 30), (12, 15), (3, 120), (24, 120)]
+        for stage in STAGE_STYLES:
+            for rows, cols in shapes:
+                pattern = plugin._generate_pattern(stage, rows, cols)
+                assert len(pattern) == rows, f"{stage} at {cols}x{rows} has {len(pattern)} rows"
+                for row in pattern:
+                    assert len(row) == cols, f"{stage} at {cols}x{rows} has {len(row)} columns"
+
+    def test_generate_pattern_has_no_dimension_literals(self, sample_manifest):
+        """A taller board must be re-rendered, not padded or tiled.
+
+        A Flagship scene stamped twice into a 22x12 board would repeat the
+        horizon; a letterboxed one would leave half the board blank. Checking
+        that the horizon lands at a *different* row index rules out both.
+        """
+        plugin = SunArtPlugin(sample_manifest)
+
+        def horizon_row(rows, cols):
+            grid = plugin._generate_pattern("morning", rows, cols)
+            # The ground band starts where the left-hand edge stops being sky.
+            sky = grid[0][0]
+            return next(r for r, row in enumerate(grid) if row[0] != sky)
+
+        assert horizon_row(6, 22) == 3
+        assert horizon_row(12, 22) == 6
+        assert horizon_row(24, 22) == 12
+
+    def test_board_size_defaults_to_flagship(self, sample_manifest):
+        """No bound board is a supported state, not a crash."""
+        plugin = SunArtPlugin(sample_manifest)
+        assert plugin.board is None
+        assert plugin.board_size() == (FALLBACK_BOARD.rows, FALLBACK_BOARD.cols)
+
+    def test_board_size_follows_bound_board(self, sample_manifest):
+        plugin = SunArtPlugin(sample_manifest)
+        with plugin._bound_board(BoardContext("note_array", rows=12, cols=30)):
+            assert plugin.board_size() == (12, 30)
     
     def test_pattern_to_string(self, sample_manifest):
         """Test pattern to string conversion."""
         plugin = SunArtPlugin(sample_manifest)
-        pattern = plugin._generate_pattern("noon", 60.0)
+        pattern = plugin._generate_pattern("noon", 6, 22)
         pattern_str = plugin._pattern_to_string(pattern)
         
         assert isinstance(pattern_str, str)
@@ -371,15 +404,18 @@ class TestSunArtEdgeCases:
         """Test pattern generation for all sun stages."""
         plugin = SunArtPlugin(sample_manifest)
         
-        stages = ["night", "dawn", "sunrise", "morning", "noon", "afternoon", "sunset", "dusk"]
-        for stage in stages:
-            pattern = plugin._generate_pattern(stage, 0.0)
-            # Verify pattern is valid (6x22, all codes are valid)
+        for stage in STAGE_STYLES:
+            pattern = plugin._generate_pattern(stage, 6, 22)
+            # Verify pattern is valid (board-sized, all codes are valid)
             assert len(pattern) == 6
             for row in pattern:
                 assert len(row) == 22
                 for code in row:
                     assert 0 <= code <= 71, f"Invalid character code {code} in {stage} pattern"
+
+    def test_unknown_stage_falls_back_to_night(self, sample_manifest):
+        plugin = SunArtPlugin(sample_manifest)
+        assert plugin._generate_pattern("not-a-stage", 6, 22) == plugin._generate_pattern("night", 6, 22)
     
     @patch('plugins.sun_art.Config')
     @patch('plugins.sun_art.elevation')
@@ -411,12 +447,12 @@ class TestSunArtEdgeCases:
         # First fetch - should calculate
         result1 = plugin.fetch_data()
         assert result1.available is True
-        
-        # Set up cache
-        plugin._cache = result1.data.copy()
-        plugin._cache["calculated_at"] = now
-        plugin._cache_date = now.strftime("%Y-%m-%d")
-        
+        assert plugin._sun_cache is not None
+        assert "sun_art" not in plugin._sun_cache, (
+            "the plugin's own cache must hold no rendered output: it is not "
+            "keyed by geometry and would serve one board's art to another"
+        )
+
         # Second fetch within refresh interval - should use cache
         result2 = plugin.fetch_data()
         assert result2.available is True
@@ -452,19 +488,16 @@ class TestSunArtEdgeCases:
         
         result1 = plugin.fetch_data()
         assert result1.available is True
-        
-        plugin._cache = result1.data.copy()
-        plugin._cache["calculated_at"] = now
-        plugin._cache_date = now.strftime("%Y-%m-%d")
-        
-        # Same cache window, different location: the cached pattern is now wrong
+        assert plugin._sun_cache is not None
+
+        # Same cache window, different location: the cached position is now wrong
         plugin.config = {
             "latitude": 40.7128,
             "longitude": -74.0060,
             "refresh_seconds": 300
         }
-        assert plugin._cache is None
-        
+        assert plugin._sun_cache is None
+
         result2 = plugin.fetch_data()
         assert result2.available is True
         assert mock_elevation.call_count == 2  # Recalculated for the new location
